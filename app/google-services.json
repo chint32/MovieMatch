@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "668908237704",
+    "project_id": "moviematch-411e1",
+    "storage_bucket": "moviematch-411e1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:668908237704:android:291b666ecaff8828a7003d",
+        "android_client_info": {
+          "package_name": "cotey.hinton.moviedate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "668908237704-l9mu1o0ucm05ic9g8k9eq110r68a13g8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "cotey.hinton.moviedate",
+            "certificate_hash": "48a97f68d6b4a23d9b6657ed729afb7b02c4b616"
+          }
+        },
+        {
+          "client_id": "668908237704-a3tmcl3paonuvh4v35drea28vp1jdjgj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzJMYIGDmIWlELDVZcSfZTog-mNCOuqj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "668908237704-a3tmcl3paonuvh4v35drea28vp1jdjgj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
