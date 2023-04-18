@@ -39,6 +39,7 @@ fun MessagesScreen(viewModel: MainViewModel) {
     ) { uri: Uri? ->
         sendImageMessage(viewModel, uri)
     }
+    println()
 
     val listState = rememberLazyListState()
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
