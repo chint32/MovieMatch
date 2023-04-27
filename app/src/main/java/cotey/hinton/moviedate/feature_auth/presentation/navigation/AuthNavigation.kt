@@ -10,19 +10,18 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.google.gson.Gson
 import cotey.hinton.moviedate.Screens
-import cotey.hinton.moviedate.feature_auth.presentation.screens.create_profile.CreateProfileScreen
 import cotey.hinton.moviedate.feature_auth.presentation.screens.auth.AuthScreen
+import cotey.hinton.moviedate.feature_auth.presentation.screens.create_profile.CreateProfileScreen
 import cotey.hinton.moviedate.feature_auth.presentation.screens.select_favorites.SelectFavoritesScreen
-import cotey.hinton.moviedate.feature_auth.presentation.screens.shared.SharedState
 import cotey.hinton.moviedate.feature_auth.presentation.viewmodel.AuthViewModel
 import cotey.hinton.moviedate.feature_main.presentation.screens.movie_details.MovieDetailsScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.song_details.SongDetailsScreen
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
-fun AuthNavigation(navController: NavHostController, paddingValues: PaddingValues) {
+fun AuthNavigation(windowSizeClass: WindowSizeClass, navController: NavHostController, paddingValues: PaddingValues) {
     val viewModel: AuthViewModel = hiltViewModel()
 
 
@@ -31,13 +30,13 @@ fun AuthNavigation(navController: NavHostController, paddingValues: PaddingValue
         startDestination = Screens.AuthScreen.route,
     ) {
         composable(route = Screens.AuthScreen.route) {
-            AuthScreen(navController, viewModel)
+            AuthScreen(windowSizeClass, navController, viewModel)
         }
         composable(route = Screens.CreateProfileScreen.route) {
-            CreateProfileScreen(navController, viewModel)
+            CreateProfileScreen(windowSizeClass, navController, viewModel)
         }
         composable(route = Screens.SelectFavoritesScreen.route){
-            SelectFavoritesScreen(navController, viewModel)
+            SelectFavoritesScreen(windowSizeClass, navController, viewModel)
         }
         composable(route = Screens.MovieDetailsScreen.route +
                 "?movieJsonString={movieJsonString}",
@@ -50,7 +49,7 @@ fun AuthNavigation(navController: NavHostController, paddingValues: PaddingValue
         )
         {
             val movieJsonString = it.arguments?.getString("movieJsonString")!!
-            MovieDetailsScreen(movieJsonString = movieJsonString)
+            MovieDetailsScreen(windowSizeClass, movieJsonString)
         }
         composable(route = Screens.SongDetailsScreen.route +
                 "?trackImage={trackImage}",
@@ -63,7 +62,7 @@ fun AuthNavigation(navController: NavHostController, paddingValues: PaddingValue
         )
         {
             val trackImage = it.arguments?.getString("trackImage")!!
-            SongDetailsScreen(viewModel.songDetailsState, trackImage)
+            SongDetailsScreen(windowSizeClass, viewModel.songDetailsState, trackImage)
         }
     }
 }

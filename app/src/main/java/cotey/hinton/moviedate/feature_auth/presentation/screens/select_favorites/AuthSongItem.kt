@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -31,18 +34,20 @@ import cotey.hinton.moviedate.ui.theme.Pink
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun AuthSongItem(
+    fontSize: TextUnit,
+    iconSize: Dp,
     song: TrackMetaData,
+    favoriteSongs: SnapshotStateList<TrackMetaData>,
     viewModel: AuthViewModel,
     navController: NavController,
     showFavoriteIcon: Boolean,
 ) {
     Box(
         modifier = Modifier
-            .width(100.dp)
-            .height(200.dp)
-            .padding(8.dp)
+            .fillMaxSize()
+            .padding(10.dp)
             .clip(RoundedCornerShape(20.dp)),
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.BottomCenter
     ) {
         GlideImage(
             modifier = Modifier
@@ -55,9 +60,9 @@ fun AuthSongItem(
                                     "?trackImage=${song.displayImageUri}"
                         )
                     } else {
-                        if (!viewModel.selectFavoritesState.favoriteSongs.contains(song))
-                            viewModel.selectFavoritesState.favoriteSongs.add(song)
-                        else viewModel.selectFavoritesState.favoriteSongs.remove(song)
+                        if (!favoriteSongs.contains(song))
+                            favoriteSongs.add(song)
+                        else favoriteSongs.remove(song)
                     }
                 }
                 .drawWithCache {
@@ -76,42 +81,42 @@ fun AuthSongItem(
             contentScale = ContentScale.Crop
         )
 
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-
-            Column() {
-
-
-                Text(
-                    text = song.trackName,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = song.artists[0].name,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(270.dp))
-            }
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
+            Text(
+                text = song.trackName,
+                modifier = Modifier.fillMaxWidth(),
+                fontWeight = FontWeight.Bold,
+                fontSize = fontSize,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = song.artists[0].name,
+                modifier = Modifier.fillMaxWidth(),
+                fontSize = fontSize,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
         }
-
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter){
         if (showFavoriteIcon) {
-            Row(Modifier.fillMaxWidth(.96f), horizontalArrangement = Arrangement.End) {
+            Row(
+                Modifier.fillMaxWidth().padding(20.dp, 20.dp),
+                horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = {
-                    if (viewModel.selectFavoritesState.favoriteSongs.contains(song))
-                        viewModel.selectFavoritesState.favoriteSongs.remove(song)
-                    else viewModel.selectFavoritesState.favoriteSongs.add(song)
+                    if (favoriteSongs.contains(song))
+                        favoriteSongs.remove(song)
+                    else favoriteSongs.add(song)
                 }) {
                     Icon(
-                        imageVector = if (viewModel.selectFavoritesState.favoriteSongs.contains(song)) Icons.Outlined.Favorite
+                        imageVector = if (favoriteSongs.contains(song)) Icons.Outlined.Favorite
                         else Icons.Outlined.FavoriteBorder,
                         contentDescription = null,
-                        tint = Pink
+                        tint = Pink,
+                        modifier = Modifier.size(iconSize)
                     )
                 }
             }

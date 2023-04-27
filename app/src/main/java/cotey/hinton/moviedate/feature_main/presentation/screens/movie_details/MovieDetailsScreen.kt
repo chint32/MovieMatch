@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -19,15 +20,18 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import cotey.hinton.moviedate.feature_auth.domain.models.Movie
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun MovieDetailsScreen(
+    windowSizeClass: WindowSizeClass,
     movieJsonString: String
 ) {
     val movie = Gson().fromJson(movieJsonString, Movie::class.java)
-
+    val fontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 18.sp else 28.sp
+    val imageHeight = if(windowSizeClass == WindowSizeClass.COMPACT) 275.dp else 400.dp
     Column(
         Modifier.verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -37,7 +41,7 @@ fun MovieDetailsScreen(
             contentDescription = "Movie poster",
             modifier = Modifier
                 .fillMaxWidth()
-                .height(275.dp),
+                .height(imageHeight),
             contentScale = ContentScale.FillBounds
         )
         Text(
@@ -47,6 +51,7 @@ fun MovieDetailsScreen(
             modifier = Modifier.fillMaxWidth(),
             color = Color.Gray,
             textAlign = TextAlign.Center,
+            fontSize = fontSize
         )
         Spacer(modifier = Modifier.height(10.dp))
         Text(
@@ -54,12 +59,14 @@ fun MovieDetailsScreen(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
             textAlign = TextAlign.Start,
+            fontSize = fontSize
         )
         Text(
             text = movie.description,
             modifier = Modifier.fillMaxWidth(),
             color = Color.Gray,
             textAlign = TextAlign.Start,
+            fontSize = fontSize
         )
         Spacer(modifier = Modifier.height(10.dp))
         Text(
@@ -67,6 +74,7 @@ fun MovieDetailsScreen(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
             textAlign = TextAlign.Start,
+            fontSize = fontSize
         )
         Text(
             text = movie.director.toString()
@@ -74,12 +82,13 @@ fun MovieDetailsScreen(
             modifier = Modifier.fillMaxWidth(),
             color = Color.Gray,
             textAlign = TextAlign.Start,
+            fontSize = fontSize
         )
         Spacer(modifier = Modifier.height(10.dp))
         AndroidView(
             factory = {
                 val view = YouTubePlayerView(it)
-                val fragment = view.addYouTubePlayerListener(
+                view.addYouTubePlayerListener(
                     object : AbstractYouTubePlayerListener() {
                         override fun onReady(youTubePlayer: YouTubePlayer) {
                             super.onReady(youTubePlayer)

@@ -8,9 +8,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -24,18 +26,18 @@ import cotey.hinton.moviedate.ui.theme.Pink
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun AuthMovieItem(
+    iconSize: Dp,
     movie: Movie,
-    viewModel: AuthViewModel,
+    favoriteMovies: SnapshotStateList<Movie>,
     navController: NavController,
     showFavoriteIcon: Boolean
 ) {
     val movieJsonString = Gson().toJson(movie).toString()
     Box(
-        modifier = if(showFavoriteIcon) Modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(10.dp)
             .clip(RoundedCornerShape(20.dp))
-        else Modifier.width(100.dp).height(160.dp).padding(4.dp).clip(RoundedCornerShape(10.dp))
     ) {
 
         GlideImage(
@@ -48,9 +50,8 @@ fun AuthMovieItem(
                                     "?movieJsonString=$movieJsonString"
                         )
                     } else {
-                        if (!viewModel.selectFavoritesState.favoriteMovies.contains(movie))
-                            viewModel.selectFavoritesState.favoriteMovies.add(movie)
-                        else viewModel.selectFavoritesState.favoriteMovies.remove(movie)
+                        if (!favoriteMovies.contains(movie)) favoriteMovies.add(movie)
+                        else favoriteMovies.remove(movie)
                     }
                 },
             model = movie.image,
@@ -61,15 +62,16 @@ fun AuthMovieItem(
         if (showFavoriteIcon) {
             Row(Modifier.fillMaxWidth(.96f), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = {
-                    if (viewModel.selectFavoritesState.favoriteMovies.contains(movie))
-                        viewModel.selectFavoritesState.favoriteMovies.remove(movie)
-                    else viewModel.selectFavoritesState.favoriteMovies.add(movie)
+                    if (favoriteMovies.contains(movie))
+                       favoriteMovies.remove(movie)
+                    else favoriteMovies.add(movie)
                 }) {
                     Icon(
-                        imageVector = if (viewModel.selectFavoritesState.favoriteMovies.contains(movie)) Icons.Outlined.Favorite
+                        imageVector = if (favoriteMovies.contains(movie)) Icons.Outlined.Favorite
                         else Icons.Outlined.FavoriteBorder,
                         contentDescription = null,
-                        tint = Pink
+                        tint = Pink,
+                        modifier = Modifier.size(iconSize)
                     )
                 }
             }

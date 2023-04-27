@@ -9,7 +9,5 @@ import cotey.hinton.moviedate.feature_main.domain.models.Message
 
 data class MessagesScreenState(
     val messages: SnapshotStateList<Message> = mutableStateListOf(),
-    val imageUri: MutableState<Uri?> = mutableStateOf(null),
-    val messageText: MutableState<String> = mutableStateOf(""),
     val isLoading: MutableState<Boolean> = mutableStateOf(false)
 )

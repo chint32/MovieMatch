@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import cotey.hinton.moviedate.feature_main.presentation.screens.shared.components.ProgressIndicatorClickDisabled
@@ -31,10 +30,12 @@ import cotey.hinton.moviedate.feature_main.presentation.screens.song_details.aud
 import cotey.hinton.moviedate.feature_main.presentation.screens.song_details.audio_visualizer.VisualizerComputer
 import cotey.hinton.moviedate.feature_main.presentation.screens.song_details.audio_visualizer.VisualizerData
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun SongDetailsScreen(
+    windowSizeClass: WindowSizeClass,
     songDetailsState: SongDetailsState,
     trackImage: String
 ) {
@@ -42,6 +43,9 @@ fun SongDetailsScreen(
     val context = LocalContext.current
     val audioPlayer = AudioPlayer()
     VisualizerComputer.setupPermissions(context.getActivity()!!)
+    val fontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 20.sp else 30.sp
+    val contentAlpha = if (songDetailsState.isLoading.value) .5f else 1f
+    val imageSize = if(windowSizeClass == WindowSizeClass.COMPACT) 300.dp else 500.dp
 
     // clean up audio player on decomposition
     DisposableEffect(audioPlayer){
@@ -56,7 +60,7 @@ fun SongDetailsScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .alpha(if (songDetailsState.isLoading.value) .5f else 1f)
+                .alpha(contentAlpha)
                 .clip(RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -66,7 +70,7 @@ fun SongDetailsScreen(
                 contentDescription = "Song poster",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(imageSize)
                     .drawWithCache {
                         val gradient = Brush.verticalGradient(
                             colors = listOf(Color.Transparent, Color.Black),
@@ -88,27 +92,32 @@ fun SongDetailsScreen(
 
                     if (songDetailsState.songDetails.value != null) {
 
+                        if(windowSizeClass != WindowSizeClass.COMPACT)
+                            Spacer(modifier = Modifier.height(100.dp))
+
                         Text(
                             text = songDetailsState.songDetails.value!!.album.name,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            fontSize = 20.sp
+                            fontSize = fontSize
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = songDetailsState.songDetails.value!!.album.artists.joinToString { it.name },
                             fontWeight = FontWeight.Bold,
                             color = Color.LightGray,
+                            fontSize = fontSize
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = songDetailsState.songDetails.value!!.album.release_date,
                             fontWeight = FontWeight.Bold,
                             color = Color.LightGray,
+                            fontSize = fontSize
                         )
-                        Spacer(modifier = Modifier.height(50.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         VideoPlayer(audioPlayer, songDetailsState.songDetails.value!!.preview_url)
-                        Spacer(modifier = Modifier.height(100.dp))
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }
@@ -144,8 +153,8 @@ fun Content(
 
         FancyTubularStackedBarEqualizer(
             Modifier
-                .fillMaxWidth(.8f)
-                .aspectRatio(1.5f)
+                .fillMaxWidth(.7f)
+                .aspectRatio(1.6f)
                 .padding(vertical = 4.dp),
             data = visualizerData.value,
             barCount = 48,

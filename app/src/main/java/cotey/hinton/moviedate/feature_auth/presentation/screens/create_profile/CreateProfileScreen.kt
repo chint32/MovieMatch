@@ -41,34 +41,46 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import com.google.accompanist.pager.*
 import com.google.firebase.firestore.GeoPoint
 import cotey.hinton.moviedate.feature_auth.presentation.viewmodel.AuthViewModel
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 import kotlinx.coroutines.launch
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun CreateProfileScreen(
+    windowSizeClass: WindowSizeClass,
     navController: NavController,
     viewModel: AuthViewModel
 ) {
+
+    // State
     val genders =
         listOf("Male", "Female", "Transgender", "Gender nonconforming", "Prefer not to say")
     val lookingFor =
         listOf("Chatting", "Friends", "Relationship", "Fun")
     val ages = ArrayList<String>()
     for (i in 15..100) ages.add(i.toString())
-
+    val screenName = remember { mutableStateOf("") }
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) }
+    val sliderState = remember { mutableStateOf(0f) }
+    val fontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 16.sp else 26.sp
+    val imageSize = if (windowSizeClass == WindowSizeClass.COMPACT) 150.dp else 300.dp
     val context = LocalContext.current
+    val pagerState = rememberPagerState(pageCount = 3)
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        viewModel.createProfileState.images[viewModel.createProfileState.pagerState.currentPage] =
+        viewModel.createProfileState.images[pagerState.currentPage] =
             uri
-        viewModel.addImage(uri, viewModel.createProfileState.pagerState.currentPage)
+        viewModel.addImage(uri, pagerState.currentPage)
     }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -83,7 +95,8 @@ fun CreateProfileScreen(
         } else {
             Toast.makeText(
                 context,
-                "Location permission denied. You wont be able to proceed until location permission is granted and location is updated",
+                "Location permission denied. You wont be able to proceed " +
+                        "until location permission is granted and location is updated",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -91,37 +104,40 @@ fun CreateProfileScreen(
 
     Column(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
 
-        Tabs(pagerState = viewModel.createProfileState.pagerState)
+        Tabs(windowSizeClass, pagerState)
         TabsContent(
-            pagerState = viewModel.createProfileState.pagerState,
-            viewModel.createProfileState.images[viewModel.createProfileState.pagerState.currentPage],
+            imageSize,
+            pagerState,
+            viewModel.createProfileState.images[pagerState.currentPage],
             galleryLauncher,
-            viewModel.createProfileState.bitmap,
+            bitmap,
             context
         )
-        TextFieldScreenName(viewModel)
-        DropDownItem(genders, "Your gender", viewModel, false)
-        DropDownItem(genders, "Genders interested in", viewModel, true)
-        DropDownItem(ages, "Your age", viewModel, false)
-        DropDownItem(ages, "Interested in ages starting at", viewModel, false)
-        DropDownItem(ages, "Interested in ages ending at", viewModel, false)
-        DropDownItem(lookingFor, "Looking for", viewModel, true)
+        TextFieldScreenName(fontSize, screenName)
+        DropDownItem(fontSize, genders, "Your gender", viewModel, false)
+        DropDownItem(fontSize, genders, "Genders interested in", viewModel, true)
+        DropDownItem(fontSize, ages, "Your age", viewModel, false)
+        DropDownItem(fontSize, ages, "Interested in ages starting at", viewModel, false)
+        DropDownItem(fontSize, ages, "Interested in ages ending at", viewModel, false)
+        DropDownItem(fontSize, lookingFor, "Looking for", viewModel, true)
         Spacer(modifier = Modifier.height(15.dp))
         Button(
             onClick = { getUserLocationWithPermission(context, viewModel, permissionLauncher) },
             modifier = Modifier.fillMaxWidth(.85f),
             shape = CircleShape
-        ) { Text(text = "Set My Location", color = Color.White, fontSize = 16.sp) }
-
+        ) {
+            Text(text = "Set My Location", color = Color.White, fontSize = fontSize)
+        }
         Slider(
-            value = viewModel.createProfileState.sliderState.value,
+            value = sliderState.value,
             onValueChange = {
-                viewModel.createProfileState.sliderState.value = it
+                sliderState.value = it
                 viewModel.sharedState.userInfo.value.searchDistance = it.toInt()
             },
             valueRange = 0f..100f,
@@ -130,33 +146,35 @@ fun CreateProfileScreen(
 
             )
         Text(
-            text = "Search Distance: ${viewModel.createProfileState.sliderState.value.toInt()}",
-            color = if (viewModel.createProfileState.sliderState.value.toInt() == 0) Color.Gray.copy(
+            text = "Search Distance: ${sliderState.value.toInt()}",
+            color = if (sliderState.value.toInt() == 0) Color.Gray.copy(
                 alpha = .5f
-            ) else Color.White
+            ) else Color.White,
+            fontSize = fontSize
         )
         Spacer(modifier = Modifier.height(15.dp))
         Button(
             onClick = {
                 viewModel.sharedState.userInfo.value.screenName =
-                    viewModel.createProfileState.screenName.value
+                    screenName.value
                 if (validateUserInput(viewModel, context))
                     navController.navigate(Screens.SelectFavoritesScreen.route)
             },
             modifier = Modifier.fillMaxWidth(.85f),
             shape = CircleShape
-        ) { Text("Next", color = Color.White, fontSize = 16.sp) }
+        ) { Text("Next", color = Color.White, fontSize = fontSize) }
         Spacer(modifier = Modifier.height(15.dp))
     }
 }
 
 @Composable
-fun TextFieldScreenName(viewModel: AuthViewModel) {
+fun TextFieldScreenName(fontSize: TextUnit, screenName: MutableState<String>) {
     TextField(
-        modifier = Modifier.fillMaxWidth(.85f),
-        value = viewModel.createProfileState.screenName.value,
+        modifier = Modifier
+            .fillMaxWidth(.9f),
+        value = screenName.value,
         onValueChange = {
-            viewModel.createProfileState.screenName.value = it
+            screenName.value = it
         },
         colors = TextFieldDefaults.outlinedTextFieldColors(
             textColor = Color.White,
@@ -168,15 +186,17 @@ fun TextFieldScreenName(viewModel: AuthViewModel) {
                 text = "Your screen name",
                 color = Color.Gray.copy(alpha = .5f),
                 textAlign = TextAlign.Center,
+                fontSize = fontSize,
                 modifier = Modifier.fillMaxWidth()
             )
         },
-        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
+        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = fontSize)
     )
 }
 
 @Composable
 fun DropDownItem(
+    fontSize: TextUnit,
     items: List<String>,
     label: String,
     viewModel: AuthViewModel,
@@ -186,19 +206,20 @@ fun DropDownItem(
     var mExpanded by remember { mutableStateOf(false) }
     var mSelectedText by remember { mutableStateOf(label) }
     var mTextFieldSize by remember { mutableStateOf(Size.Zero) }
-
     val dropDownIcon =
         if (mExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
+    val underlineColor =
+        if (mExpanded) Color.Gray.copy(.8f) else Color.Gray.copy(.5f)
+    val textColor = if (mSelectedText == label) Color.Gray.copy(.5f) else Color.White
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(30.dp, 0.dp)
+            .fillMaxWidth(.9f)
             .drawBehind {
                 val strokeWidth = 2F
                 val y = size.height - strokeWidth / 2
                 drawLine(
-                    if (mExpanded) Color.Gray.copy(alpha = .8f) else Color.Gray.copy(alpha = .5f),
+                    underlineColor,
                     Offset(0f, y),
                     Offset(size.width, y),
                     strokeWidth
@@ -209,14 +230,19 @@ fun DropDownItem(
         Text(
             text = mSelectedText,
             modifier = Modifier
-                .fillMaxWidth(.8f)
+                .fillMaxWidth(.9f)
                 .onGloballyPositioned { coordinates ->
                     mTextFieldSize = coordinates.size.toSize()
                 },
-            color = if (mSelectedText == label) Color.Gray.copy(.5f) else Color.White,
+            color = textColor,
+            fontSize = fontSize,
         )
         IconButton(onClick = { mExpanded = !mExpanded }) {
-            Icon(imageVector = dropDownIcon, contentDescription = "", tint = Pink)
+            Icon(
+                imageVector = dropDownIcon,
+                contentDescription = "",
+                tint = Pink,
+            )
         }
         DropdownMenu(
             expanded = mExpanded,
@@ -229,16 +255,15 @@ fun DropDownItem(
                     if (!isMultiSelect) {
                         mSelectedText = items[i]
                         mExpanded = false
-                        if (label == "Your gender") viewModel.sharedState.userInfo.value.gender =
-                            mSelectedText
-                        else if (label == "Your age") viewModel.sharedState.userInfo.value.age =
-                            mSelectedText.toInt()
-                        else if (label == "Interested in ages starting at") viewModel.sharedState.userInfo.value.startAgeInterestedIn =
-                            mSelectedText.toInt()
-                        else if (label == "Interested in ages ending at") viewModel.sharedState.userInfo.value.endAgeInterestedIn =
-                            mSelectedText.toInt()
+                        if (label == "Your gender")
+                            viewModel.sharedState.userInfo.value.gender = mSelectedText
+                        else if (label == "Your age")
+                            viewModel.sharedState.userInfo.value.age = mSelectedText.toInt()
+                        else if (label == "Interested in ages starting at")
+                            viewModel.sharedState.userInfo.value.startAgeInterestedIn = mSelectedText.toInt()
+                        else if (label == "Interested in ages ending at")
+                            viewModel.sharedState.userInfo.value.endAgeInterestedIn = mSelectedText.toInt()
                     }
-
                 }) {
                     if (isMultiSelect) {
                         var isChecked by remember {
@@ -260,49 +285,42 @@ fun DropDownItem(
                         ) {
                             Text(
                                 text = items[i],
-                                modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
+                                modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp),
+                                fontSize = fontSize
                             )
                             Checkbox(
                                 checked = isChecked,
                                 onCheckedChange = {
-                                    if(label == "Genders interested in") {
-                                        if (!viewModel.sharedState.userInfo.value.genderInterestedIn.contains(
-                                                items[i]
-                                            )
+                                    if (label == "Genders interested in") {
+                                        if (!viewModel.sharedState.userInfo.value
+                                                .genderInterestedIn.contains(items[i])) {
+                                                    viewModel.sharedState.userInfo.value
+                                                        .genderInterestedIn.add(i, items[i])
+                                        }
+                                        else viewModel.sharedState.userInfo
+                                            .value.genderInterestedIn.removeAt(i)
+                                    } else {
+                                        if (!viewModel.sharedState.userInfo
+                                                .value.lookingFor.contains(items[i])
                                         )
-                                            viewModel.sharedState.userInfo.value.genderInterestedIn.add(
-                                                i,
-                                                items[i]
-                                            )
-                                        else viewModel.sharedState.userInfo.value.genderInterestedIn.removeAt(i)
-                                    }
-                                    else {
-                                        if (!viewModel.sharedState.userInfo.value.lookingFor.contains(
-                                                items[i]
-                                            )
-                                        )
-                                            viewModel.sharedState.userInfo.value.lookingFor.add(
-                                                i,
-                                                items[i]
-                                            )
-                                        else viewModel.sharedState.userInfo.value.lookingFor.removeAt(i)
+                                            viewModel.sharedState.userInfo
+                                                .value.lookingFor.add(i, items[i])
+                                        else viewModel.sharedState.userInfo
+                                            .value.lookingFor.removeAt(i)
                                     }
                                     isChecked = !isChecked
                                 })
                         }
-                    } else {
-                        Text(text = items[i])
                     }
+                    else {  Text(text = items[i], fontSize = fontSize)  }
                 }
             }
             if (isMultiSelect) {
                 Button(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(30.dp, 0.dp),
+                    modifier = Modifier.fillMaxWidth().padding(30.dp, 0.dp),
                     onClick = {
                         mSelectedText = ""
-                        if(label == "Genders interested in") {
+                        if (label == "Genders interested in") {
                             if (viewModel.sharedState.userInfo.value.genderInterestedIn.isEmpty()) return@Button
                             for (i in viewModel.sharedState.userInfo.value.genderInterestedIn.indices) {
                                 if (viewModel.sharedState.userInfo.value.genderInterestedIn[i] != null) {
@@ -324,7 +342,7 @@ fun DropDownItem(
                     },
                     shape = CircleShape
                 ) {
-                    Text(text = "Accept", color = Color.White)
+                    Text(text = "Accept", color = Color.White, fontSize = fontSize)
                 }
             }
         }
@@ -333,9 +351,11 @@ fun DropDownItem(
 
 @ExperimentalPagerApi
 @Composable
-fun Tabs(pagerState: PagerState) {
+fun Tabs(windowSizeClass: WindowSizeClass, pagerState: PagerState) {
 
     val list = listOf("Profile", "Image 2", "Image 3")
+    val selectedTabFontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 26.sp else 46.sp
+    val unselectedTabFontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 20.sp else 40.sp
     val scope = rememberCoroutineScope()
 
     TabRow(
@@ -353,22 +373,26 @@ fun Tabs(pagerState: PagerState) {
         list.forEachIndexed { index, _ ->
             Tab(
                 text = {
-                    if ((pagerState.currentPage == index)) {
-                        Text(
-                            list[index],
-                            color = Color.White,
-                            modifier = Modifier.alpha(1f),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                        )
-                    } else {
-                        Text(
-                            list[index],
-                            color = Color.White,
-                            modifier = Modifier.alpha(.4f),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Column() {
+                        if ((pagerState.currentPage == index)) {
+                            Text(
+                                list[index],
+                                color = Color.White,
+                                modifier = Modifier.alpha(1f),
+                                fontSize = selectedTabFontSize,
+                                fontWeight = FontWeight.ExtraBold,
+                            )
+                        } else {
+                            Text(
+                                list[index],
+                                color = Color.White,
+                                modifier = Modifier.alpha(.4f),
+                                fontSize = unselectedTabFontSize,
+                                fontWeight = FontWeight.Bold
+
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
                 },
                 selected = pagerState.currentPage == index,
@@ -383,6 +407,7 @@ fun Tabs(pagerState: PagerState) {
 @ExperimentalPagerApi
 @Composable
 fun TabsContent(
+    imageSize: Dp,
     pagerState: PagerState,
     imageUri: Uri?,
     galleryLauncher: ManagedActivityResultLauncher<String, Uri?>,
@@ -392,18 +417,23 @@ fun TabsContent(
     HorizontalPager(state = pagerState) { page ->
         when (page) {
             0 -> UserImage(
+                imageSize,
                 imageUri = imageUri,
                 galleryLauncher = galleryLauncher,
                 bitmap = bitmap,
                 context = context,
             )
+
             1 -> UserImage(
+                imageSize,
                 imageUri = imageUri,
                 galleryLauncher = galleryLauncher,
                 bitmap = bitmap,
                 context = context,
             )
+
             2 -> UserImage(
+                imageSize,
                 imageUri = imageUri,
                 galleryLauncher = galleryLauncher,
                 bitmap = bitmap,
@@ -415,6 +445,7 @@ fun TabsContent(
 
 @Composable
 fun UserImage(
+    imageSize: Dp,
     imageUri: Uri?,
     galleryLauncher: ManagedActivityResultLauncher<String, Uri?>,
     bitmap: MutableState<Bitmap?>,
@@ -426,7 +457,7 @@ fun UserImage(
             tint = Pink,
             contentDescription = "",
             modifier = Modifier
-                .size(150.dp)
+                .size(imageSize)
                 .clip(CircleShape)
                 .border(2.dp, Pink, CircleShape)
                 .clickable {
@@ -446,7 +477,7 @@ fun UserImage(
                     bitmap = btm.asImageBitmap(),
                     contentDescription = "",
                     modifier = Modifier
-                        .size(150.dp)
+                        .size(imageSize)
                         .clip(CircleShape)
                         .border(2.dp, Pink, CircleShape)
                         .clickable {
@@ -477,6 +508,7 @@ fun getUserLocationWithPermission(
                     GeoPoint(location.latitude, location.longitude)
             }
         }
+
         else -> {
             // Asking for permission
             launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)

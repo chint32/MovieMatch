@@ -25,14 +25,17 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.pagerTabIndicatorOffset
+import com.google.accompanist.pager.rememberPagerState
 import cotey.hinton.moviedate.feature_main.presentation.screens.shared.components.ProgressIndicatorClickDisabled
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
+import cotey.hinton.moviedate.util.WindowSizeClass
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun AffectionsScreen(
+    windowSizeClass: WindowSizeClass,
     navController: NavController,
     viewModel: MainViewModel
 ) {
@@ -42,13 +45,17 @@ fun AffectionsScreen(
         viewModel.getLikesAndMatches()
         hasBeenCalled = true
     }
+    val pagerState = rememberPagerState(pageCount = 2)
+    val contentAlpha = if (viewModel.affectionsScreenState.isLoading.value) .5f else 1f
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center){
-        Column(Modifier.fillMaxSize()
-            .alpha(if (viewModel.affectionsScreenState.isLoading.value) .5f else 1f),
+        Column(
+            Modifier
+                .fillMaxSize()
+                .alpha(contentAlpha),
             Arrangement.SpaceEvenly) {
-            Tabs(pagerState = viewModel.affectionsScreenState.pagerState)
-            TabsContent(viewModel, navController)
+            Tabs(windowSizeClass, pagerState)
+            TabsContent(windowSizeClass, pagerState, viewModel, navController)
         }
         if(viewModel.affectionsScreenState.isLoading.value)
             ProgressIndicatorClickDisabled()
@@ -58,9 +65,11 @@ fun AffectionsScreen(
 @RequiresApi(Build.VERSION_CODES.Q)
 @ExperimentalPagerApi
 @Composable
-fun Tabs(pagerState: PagerState) {
+fun Tabs(windowSizeClass: WindowSizeClass, pagerState: PagerState) {
 
     val list = listOf("Likes", "Matches")
+    val selectedTabFontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 36.sp else 46.sp
+    val unselectedTabFontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 20.sp else 30.sp
     val scope = rememberCoroutineScope()
 
     TabRow(
@@ -83,7 +92,7 @@ fun Tabs(pagerState: PagerState) {
                             list[index],
                             color = Color.White,
                             modifier = Modifier.alpha(1f),
-                            fontSize = 36.sp,
+                            fontSize = selectedTabFontSize,
                             fontWeight = FontWeight.ExtraBold,
                         )
                     } else {
@@ -91,7 +100,7 @@ fun Tabs(pagerState: PagerState) {
                             list[index],
                             color = Color.White,
                             modifier = Modifier.alpha(.4f),
-                            fontSize = 20.sp,
+                            fontSize = unselectedTabFontSize,
                             fontWeight = FontWeight.Bold
 
                         )
@@ -112,16 +121,18 @@ fun Tabs(pagerState: PagerState) {
 @ExperimentalPagerApi
 @Composable
 fun TabsContent(
+    windowSizeClass: WindowSizeClass,
+    pagerState: PagerState,
     viewModel: MainViewModel,
     navController: NavController,
 ) {
-    HorizontalPager(state = viewModel.affectionsScreenState.pagerState) { page ->
+    HorizontalPager(pagerState) { page ->
         when (page) {
             0 -> {
-                LikesContent(viewModel, navController)
+                LikesContent(windowSizeClass, viewModel, navController)
             }
             1 -> {
-                MatchesContent(viewModel, navController)
+                MatchesContent(windowSizeClass, viewModel, navController)
             }
         }
     }
@@ -129,7 +140,7 @@ fun TabsContent(
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun MatchesContent(viewModel: MainViewModel, navController: NavController){
+fun MatchesContent(windowSizeClass: WindowSizeClass, viewModel: MainViewModel, navController: NavController){
 
     var hasBeenCalled by remember { mutableStateOf(false) }
     if(!hasBeenCalled) {
@@ -139,6 +150,7 @@ fun MatchesContent(viewModel: MainViewModel, navController: NavController){
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(viewModel.affectionsScreenState.matches.sortedByDescending { it.second }) { pair ->
             AffectionsItem(
+                windowSizeClass,
                 pair.second,
                 pair.first,
                 viewModel,
@@ -151,7 +163,7 @@ fun MatchesContent(viewModel: MainViewModel, navController: NavController){
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun LikesContent(viewModel: MainViewModel, navController: NavController){
+fun LikesContent(windowSizeClass: WindowSizeClass, viewModel: MainViewModel, navController: NavController){
 
     var hasBeenCalled by remember { mutableStateOf(false) }
     if(!hasBeenCalled) {
@@ -162,6 +174,7 @@ fun LikesContent(viewModel: MainViewModel, navController: NavController){
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(viewModel.affectionsScreenState.likesMe.sortedByDescending { it.second }) { pair ->
             AffectionsItem(
+                windowSizeClass,
                 pair.second,
                 pair.first,
                 viewModel,

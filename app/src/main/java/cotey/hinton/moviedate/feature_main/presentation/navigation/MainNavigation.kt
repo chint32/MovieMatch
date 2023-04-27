@@ -17,16 +17,17 @@ import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
 import cotey.hinton.moviedate.feature_main.presentation.screens.conversations.ConversationsScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.affections.AffectionsScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.messages.MessagesScreen
-import cotey.hinton.moviedate.feature_main.presentation.screens.edit_movies.EditMoviesScreen
+import cotey.hinton.moviedate.feature_main.presentation.screens.edit_movies.EditFavoritesScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.movie_details.MovieDetailsScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.profile_details.ProfileDetailsScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.song_details.SongDetailsScreen
 import cotey.hinton.moviedate.feature_main.presentation.screens.view_movies.ViewMoviesScreen
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 @SuppressLint("NewApi")
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun MainNavigation(navController: NavHostController, paddingValues: PaddingValues) {
+fun MainNavigation(windowSizeClass: WindowSizeClass, navController: NavHostController, paddingValues: PaddingValues) {
     val mainViewModel: MainViewModel = hiltViewModel()
 
     NavHost(
@@ -35,27 +36,31 @@ fun MainNavigation(navController: NavHostController, paddingValues: PaddingValue
     ) {
         composable(route = Screens.MatchesScreen.route) {
             AffectionsScreen(
-                navController = navController,
+                windowSizeClass,
+                navController,
                 mainViewModel
             )
         }
 
         composable(route = Screens.ConversationsScreen.route) {
             ConversationsScreen(
-                navController = navController,
+                windowSizeClass,
+                navController,
                 mainViewModel
             )
         }
 
         composable(route = Screens.EditMoviesScreen.route) {
-            EditMoviesScreen(
-                navController = navController,
+            EditFavoritesScreen(
+                windowSizeClass,
+                navController,
                 mainViewModel
             )
         }
 
         composable(route = Screens.MainScreen.route) {
             MainScreen(
+                windowSizeClass,
                 navController = navController,
                 mainViewModel
             )
@@ -83,7 +88,8 @@ fun MainNavigation(navController: NavHostController, paddingValues: PaddingValue
             val isMyProfile = it.arguments?.getBoolean("isMyProfile")!!
             val isMatch = it.arguments?.getBoolean("isMatch")!!
             ProfileDetailsScreen(
-                navController = navController,
+                windowSizeClass,
+                navController,
                 mainViewModel,
                 isMyProfile,
                 isMatch
@@ -91,7 +97,7 @@ fun MainNavigation(navController: NavHostController, paddingValues: PaddingValue
         }
 
         composable(route = Screens.MessagesScreen.route) {
-            MessagesScreen(mainViewModel)
+            MessagesScreen(windowSizeClass, mainViewModel)
         }
 
         composable(route = Screens.MovieDetailsScreen.route +
@@ -105,7 +111,7 @@ fun MainNavigation(navController: NavHostController, paddingValues: PaddingValue
         )
         {
             val movieJsonString = it.arguments?.getString("movieJsonString")!!
-            MovieDetailsScreen(movieJsonString = movieJsonString)
+            MovieDetailsScreen(windowSizeClass, movieJsonString)
         }
 
         composable(route = Screens.SongDetailsScreen.route +
@@ -119,7 +125,7 @@ fun MainNavigation(navController: NavHostController, paddingValues: PaddingValue
         )
         {
             val trackImage = it.arguments?.getString("trackImage")!!
-            SongDetailsScreen(mainViewModel.songDetailsState, trackImage)
+            SongDetailsScreen(windowSizeClass, mainViewModel.songDetailsState, trackImage)
         }
 
         composable(
@@ -136,6 +142,7 @@ fun MainNavigation(navController: NavHostController, paddingValues: PaddingValue
         ) {
             val isMyProfile = it.arguments?.getBoolean("isMyProfile")!!
             ViewMoviesScreen(
+                windowSizeClass,
                 mainViewModel,
                 navController,
                 isMyProfile

@@ -36,88 +36,36 @@ open class CardStackController(
     val offsetX = Animatable(0f)
     val offsetY = Animatable(0f)
     val rotation = Animatable(0f)
-//    val scale = Animatable(0.8f)
 
     var onSwipeLeft: () -> Unit = {}
     var onSwipeRight: () -> Unit = {}
-
     fun swipeLeft() {
         scope.apply {
             launch {
                 offsetX.animateTo(-screenWidth, animationSpec)
-
                 onSwipeLeft()
-
-                launch {
-                    offsetX.snapTo(center.x)
-                }
-
-                launch {
-                    offsetY.snapTo(0f)
-                }
-
-                launch {
-                    rotation.snapTo(0f)
-                }
-
-//                launch {
-//                    scale.snapTo(0.8f)
-//                }
+                launch { offsetX.snapTo(center.x) }
+                launch { offsetY.snapTo(0f) }
+                launch { rotation.snapTo(0f) }
             }
-
-//            launch {
-//                scale.animateTo(1f, animationSpec)
-//            }
         }
     }
-
     fun swipeRight() {
         scope.apply {
             launch {
                 offsetX.animateTo(screenWidth, animationSpec)
-
                 onSwipeRight()
-
-                launch {
-                    offsetX.snapTo(center.x)
-                }
-
-                launch {
-                    offsetY.snapTo(0f)
-                }
-
-//                launch {
-//                    scale.snapTo(0.8f)
-//                }
-
-                launch {
-                    rotation.snapTo(0f)
-                }
+                launch { offsetX.snapTo(center.x) }
+                launch { offsetY.snapTo(0f) }
+                launch { rotation.snapTo(0f) }
             }
-
-//            launch {
-//                scale.animateTo(1f, animationSpec)
-//            }
         }
     }
-
     fun returnCenter() {
         scope.apply {
-            launch {
-                offsetX.animateTo(center.x, animationSpec)
-            }
-
-            launch {
-                offsetY.animateTo(center.y, animationSpec)
-            }
-
-            launch {
-                rotation.animateTo(0f, animationSpec)
-            }
-
-//            launch {
-//                scale.animateTo(0.8f, animationSpec)
-//            }
+            launch { offsetX.animateTo(center.x, animationSpec) }
+            launch { offsetY.animateTo(center.y, animationSpec) }
+            launch {  rotation.animateTo(0f, animationSpec) }
         }
     }
 }
@@ -144,13 +92,7 @@ fun Modifier.draggableStack(
     thresholdConfig: (Float, Float) -> ThresholdConfig,
     velocityThreshold: Dp = 125.dp
 ): Modifier = composed {
-    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-
-    val velocityThresholdPx = with(density) {
-        velocityThreshold.toPx()
-    }
-
     val thresholds = { a: Float, b: Float ->
         with(thresholdConfig(a, b)) {
             density.computeThreshold(a, b)
@@ -191,15 +133,6 @@ fun Modifier.draggableStack(
                         )
 
                         controller.rotation.snapTo(targetRotation * -controller.offsetX.value.sign)
-
-//                        controller.scale.snapTo(
-//                            normalize(
-//                                controller.center.x,
-//                                controller.right.x / 3,
-//                                abs(controller.offsetX.value),
-//                                0.8f
-//                            )
-//                        )
                     }
                 }
                 change.consume()

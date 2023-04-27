@@ -1,14 +1,19 @@
 package cotey.hinton.moviedate.feature_main.presentation
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -24,11 +29,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import androidx.window.layout.WindowMetricsCalculator
 import com.google.firebase.auth.FirebaseAuth
-import cotey.hinton.moviedate.BottomNavigationBar
+import cotey.hinton.moviedate.feature_main.presentation.navigation.bottom_nav.BottomNavigationBar
 import cotey.hinton.moviedate.feature_main.presentation.navigation.MainNavigation
 import cotey.hinton.moviedate.R
 import cotey.hinton.moviedate.Screens
@@ -37,11 +44,13 @@ import cotey.hinton.moviedate.feature_auth.presentation.viewmodel.AuthViewModel
 import cotey.hinton.moviedate.feature_main.services.FCMService
 import cotey.hinton.moviedate.ui.theme.MovieDateTheme
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         val window = this.window
@@ -52,10 +61,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+            val windowSizeClass = calculateWindowSizeClass()
             MovieDateTheme {
 
-                if(FirebaseAuth.getInstance().currentUser == null)
-                    LocalContext.current.startActivity(Intent(LocalContext.current, AuthActivity::class.java))
+                if (FirebaseAuth.getInstance().currentUser == null)
+                    LocalContext.current.startActivity(
+                        Intent(
+                            LocalContext.current,
+                            AuthActivity::class.java
+                        )
+                    )
 
                 startService(Intent(this, FCMService::class.java))
 
@@ -63,38 +78,48 @@ class MainActivity : ComponentActivity() {
                 var mDisplayMenu by remember { mutableStateOf(false) }
                 val authViewModel: AuthViewModel = hiltViewModel()
                 val mContext = LocalContext.current
+                val fontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 16.sp else 32.sp
+                val iconSize = if (windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 48.dp
+                val optionsMenuWidth =
+                    if (windowSizeClass == WindowSizeClass.COMPACT) 110.dp else 200.dp
+                val optionsMenuHeight =
+                    if (windowSizeClass == WindowSizeClass.COMPACT) 110.dp else 150.dp
+                val optionsMenuPadding =
+                    if (windowSizeClass == WindowSizeClass.COMPACT) 0.dp else 10.dp
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
                     Scaffold(
-                        // below line we are
-                        // creating a top bar.
                         backgroundColor = Color.Black,
                         topBar = {
                             TopAppBar(
-                                // in below line we are
-                                // adding title to our top bar.
                                 title = {
-                                    // inside title we are
-                                    // adding text to our toolbar.
                                     Text(
                                         text = "Movie Matcher",
-                                        // below line is use
-                                        // to give text color.
-                                        color = Pink
+                                        color = Pink,
+                                        fontSize = fontSize
+
                                     )
                                 },
                                 actions = {
                                     // Creating Icon button for dropdown menu
                                     IconButton(onClick = { mDisplayMenu = !mDisplayMenu }) {
-                                        Icon(Icons.Default.MoreVert, "", tint = Pink)
+                                        Icon(
+                                            Icons.Default.MoreVert,
+                                            "",
+                                            tint = Pink,
+                                            modifier = Modifier.size(iconSize)
+                                        )
                                     }
 
                                     DropdownMenu(
                                         expanded = mDisplayMenu,
-                                        onDismissRequest = { mDisplayMenu = false }
+                                        onDismissRequest = { mDisplayMenu = false },
+                                        modifier = Modifier
+                                            .height(optionsMenuHeight)
+                                            .width(optionsMenuWidth)
                                     ) {
 
                                         DropdownMenuItem(onClick = {
@@ -105,13 +130,26 @@ class MainActivity : ComponentActivity() {
                                                         "&isMatch=${false}"
                                             )
                                         }) {
-                                            Text(text = "My Profile")
+                                            Text(
+                                                text = "My Profile",
+                                                fontSize = fontSize,
+                                                modifier = Modifier.padding(optionsMenuPadding)
+                                            )
                                         }
                                         DropdownMenuItem(onClick = {
                                             authViewModel.logout()
-                                            mContext.startActivity(Intent(mContext, AuthActivity::class.java))
+                                            mContext.startActivity(
+                                                Intent(
+                                                    mContext,
+                                                    AuthActivity::class.java
+                                                )
+                                            )
                                         }) {
-                                            Text(text = "Logout")
+                                            Text(
+                                                text = "Logout",
+                                                fontSize = fontSize,
+                                                modifier = Modifier.padding(optionsMenuPadding)
+                                            )
                                         }
                                     }
                                 },
@@ -121,8 +159,7 @@ class MainActivity : ComponentActivity() {
                                 elevation = 12.dp
                             )
                         },
-                        bottomBar = { BottomNavigationBar(navController = navController) }
-                        ,
+                        bottomBar = { BottomNavigationBar(windowSizeClass, navController) },
                         content = { paddingValues ->
 
                             Box(Modifier.fillMaxSize()) {
@@ -150,7 +187,7 @@ class MainActivity : ComponentActivity() {
                                         style = Fill
                                     )
                                 }
-                                MainNavigation(navController, paddingValues)
+                                MainNavigation(windowSizeClass, navController, paddingValues)
 
                             }
                         }
@@ -158,6 +195,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun calculateWindowSizeClass(): WindowSizeClass {
+        val metrics = WindowMetricsCalculator.getOrCreate()
+            .computeCurrentWindowMetrics(this)
+
+        val widthDp = metrics.bounds.width() /
+                resources.displayMetrics.density
+        val widthWindowSizeClass = when {
+            widthDp < 600f -> WindowSizeClass.COMPACT
+            widthDp < 900f -> WindowSizeClass.MEDIUM
+            else -> WindowSizeClass.EXPANDED
+        }
+        return widthWindowSizeClass
     }
 }
 

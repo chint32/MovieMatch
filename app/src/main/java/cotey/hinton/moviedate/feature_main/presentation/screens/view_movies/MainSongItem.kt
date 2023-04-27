@@ -21,17 +21,21 @@ import cotey.hinton.moviedate.Screens
 import cotey.hinton.moviedate.feature_auth.domain.models.TrackMetaData
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun MainSongItem(
+    windowSizeClass: WindowSizeClass,
     track: TrackMetaData,
     viewModel: MainViewModel,
     navController: NavController
 ) {
-    val isFavorite =
-        remember { mutableStateOf(viewModel.sharedState.myUserInfo.value.favoriteTracks.contains(track)) }
+    val isFavorite = remember {
+        mutableStateOf(viewModel.sharedState.myUserInfo.value.favoriteTracks.contains(track))
+    }
+    val iconSize = if(windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 40.dp
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -66,7 +70,8 @@ fun MainSongItem(
                     imageVector = if (isFavorite.value) Icons.Outlined.Star
                     else Icons.Outlined.StarBorder,
                     contentDescription = null,
-                    tint = Pink
+                    tint = Pink,
+                    modifier = Modifier.size(iconSize)
                 )
             }
         }

@@ -23,30 +23,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cotey.hinton.moviedate.feature_main.domain.models.ImageMessage
 import cotey.hinton.moviedate.feature_main.domain.models.TextMessage
 import cotey.hinton.moviedate.feature_main.presentation.screens.shared.components.ProgressIndicatorClickDisabled
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun MessagesScreen(viewModel: MainViewModel) {
+fun MessagesScreen(windowSizeClass: WindowSizeClass, viewModel: MainViewModel) {
 
+    val contentAlpha = if (viewModel.mainScreenState.isLoading.value) .5f else 1f
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        sendImageMessage(viewModel, uri)
+        imageUri.value = uri
+        sendImageMessage(viewModel, imageUri)
     }
-
+    val messageText = remember{ mutableStateOf("") }
     val listState = rememberLazyListState()
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(.85f)
-                .alpha(if (viewModel.mainScreenState.isLoading.value) .5f else 1f),
+                .alpha(contentAlpha),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -60,11 +66,11 @@ fun MessagesScreen(viewModel: MainViewModel) {
                 state = listState
             ) {
                 items(viewModel.messagesScreenState.messages) { message ->
-                    MessageItem(viewModel, message)
+                    MessageItem(windowSizeClass, viewModel, message)
                 }
             }
 
-            MessageTextField(viewModel, galleryLauncher)
+            MessageTextField(windowSizeClass, messageText, viewModel, galleryLauncher)
         }
         if(viewModel.messagesScreenState.isLoading.value)
             ProgressIndicatorClickDisabled()
@@ -75,16 +81,20 @@ fun MessagesScreen(viewModel: MainViewModel) {
 @OptIn(ExperimentalTextApi::class)
 @Composable
 fun MessageTextField(
+    windowSizeClass: WindowSizeClass,
+    messageText: MutableState<String>,
     viewModel: MainViewModel,
     galleryLauncher: ManagedActivityResultLauncher<String, Uri?>
 ) {
 
+    val fontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 16.sp else 26.sp
+    val iconSize = if(windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 40.dp
     val gradientColors = listOf(Color.Cyan, Color.Blue, Color.Magenta)
     val brush = Brush.linearGradient(colors = gradientColors)
     TextField(
-        value = viewModel.messagesScreenState.messageText.value,
-        onValueChange = { viewModel.messagesScreenState.messageText.value = it },
-        textStyle = TextStyle(brush = brush),
+        value = messageText.value,
+        onValueChange = { messageText.value = it },
+        textStyle = TextStyle(brush = brush, fontSize = fontSize),
         colors = TextFieldDefaults.textFieldColors(
             cursorColor = Pink,
             focusedIndicatorColor = Pink,
@@ -97,27 +107,30 @@ fun MessageTextField(
                 Icon(
                     imageVector = Icons.Default.Menu,
                     tint = Pink,
-                    contentDescription = "Send Message"
+                    contentDescription = "Send Message",
+                    modifier = Modifier.size(iconSize)
                 )
             }
         },
         trailingIcon = {
             IconButton(modifier = Modifier.testTag("send_text_icon"), onClick = {
-                sendTextMessage(viewModel)
+                sendTextMessage(messageText, viewModel)
             }) {
                 Icon(
                     imageVector = Icons.Default.Send,
                     tint = Pink,
-                    contentDescription = "Send Message"
+                    contentDescription = "Send Message",
+                    modifier = Modifier.size(iconSize)
                 )
             }
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
 private fun sendTextMessage(
+    messageText: MutableState<String>,
     viewModel: MainViewModel
 ) {
     val message = TextMessage(
@@ -130,20 +143,19 @@ private fun sendTextMessage(
         viewModel.sharedState.otherUserInfo.value.images[0]!!,
         Calendar.getInstance().time.toString(),
         "TEXT",
-        viewModel.messagesScreenState.messageText.value
+        messageText.value
     )
     viewModel.sendTextMessage(message)
     if (!viewModel.messagesScreenState.messages.contains(message))
         viewModel.messagesScreenState.messages.add(message)
-    viewModel.messagesScreenState.messageText.value = ""
+    messageText.value = ""
 }
 
 @RequiresApi(Build.VERSION_CODES.N)
 private fun sendImageMessage(
     viewModel: MainViewModel,
-    uri: Uri?
+    imageUri: MutableState<Uri?>
 ) {
-    viewModel.messagesScreenState.imageUri.value = uri
     val message = ImageMessage(
         UUID.randomUUID().toString(),
         viewModel.sharedState.myUserInfo.value.uid,
@@ -156,5 +168,5 @@ private fun sendImageMessage(
         "IMAGE",
         ""
     )
-    viewModel.sendImageMessage(message, uri!!)
+    viewModel.sendImageMessage(message, imageUri.value!!)
 }

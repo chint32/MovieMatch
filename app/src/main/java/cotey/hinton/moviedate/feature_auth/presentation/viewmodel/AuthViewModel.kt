@@ -139,7 +139,6 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 spotifyRepository.getSpotifySongsById(id).collect {
-                    println(it)
                     _songDetailsScreenState.songDetails.value = it.tracks[0]
                 }
                 _songDetailsScreenState.isLoading.value = false

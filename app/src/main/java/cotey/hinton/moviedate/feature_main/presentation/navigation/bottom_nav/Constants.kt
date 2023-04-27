@@ -9,7 +9,6 @@ import cotey.hinton.moviedate.Screens
 
 object Constants {
     val BottomNavItems = listOf(
-
         BottomNavItem(
             label = "Messages",
             icon = Icons.Filled.Email,

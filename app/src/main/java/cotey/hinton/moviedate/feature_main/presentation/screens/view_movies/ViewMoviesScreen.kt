@@ -23,31 +23,34 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.accompanist.pager.*
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
+import cotey.hinton.moviedate.util.WindowSizeClass
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun ViewMoviesScreen(
+    windowSizeClass: WindowSizeClass,
     viewModel: MainViewModel,
     navController: NavController,
     isMyProfile: Boolean
 ) {
     val pagerState = rememberPagerState(pageCount = 2)
     Column {
-        Tabs(pagerState = pagerState)
-        TabsContent(pagerState, viewModel, navController, isMyProfile)
+        Tabs(windowSizeClass, pagerState)
+        TabsContent(windowSizeClass, pagerState, viewModel, navController, isMyProfile)
     }
-
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @ExperimentalPagerApi
 @Composable
-fun Tabs(pagerState: PagerState) {
+fun Tabs(windowSizeClass: WindowSizeClass, pagerState: PagerState) {
 
     val list = listOf("Movies", "Songs")
     val scope = rememberCoroutineScope()
+    val selectedFontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 36.sp else 46.sp
+    val unselectedFontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 20.sp else 30.sp
 
     TabRow(
         selectedTabIndex = pagerState.currentPage,
@@ -69,7 +72,7 @@ fun Tabs(pagerState: PagerState) {
                             list[index],
                             color = Color.White,
                             modifier = Modifier.alpha(1f),
-                            fontSize = 36.sp,
+                            fontSize = selectedFontSize,
                             fontWeight = FontWeight.ExtraBold,
                         )
                     } else {
@@ -77,9 +80,8 @@ fun Tabs(pagerState: PagerState) {
                             list[index],
                             color = Color.White,
                             modifier = Modifier.alpha(.4f),
-                            fontSize = 20.sp,
+                            fontSize = unselectedFontSize,
                             fontWeight = FontWeight.Bold
-
                         )
                     }
                 },
@@ -98,6 +100,7 @@ fun Tabs(pagerState: PagerState) {
 @ExperimentalPagerApi
 @Composable
 fun TabsContent(
+    windowSizeClass: WindowSizeClass,
     pagerState: PagerState,
     viewModel: MainViewModel,
     navController: NavController,
@@ -106,10 +109,10 @@ fun TabsContent(
     HorizontalPager(state = pagerState) { page ->
         when (page) {
             0 -> {
-                MainMoviesContent(viewModel, navController, isMyProfile)
+                MainMoviesContent(windowSizeClass, viewModel, navController, isMyProfile)
             }
             1 -> {
-                MainSongsContent(viewModel, navController, isMyProfile)
+                MainSongsContent(windowSizeClass, viewModel, navController, isMyProfile)
             }
         }
     }
@@ -118,6 +121,7 @@ fun TabsContent(
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun MainMoviesContent(
+    windowSizeClass: WindowSizeClass,
     viewModel: MainViewModel,
     navController: NavController,
     isMyProfile: Boolean
@@ -132,7 +136,7 @@ fun MainMoviesContent(
             if (isMyProfile) viewModel.sharedState.myUserInfo.value.favoriteMovies
             else viewModel.sharedState.otherUserInfo.value.favoriteMovies
         ) { movie ->
-            MainMovieItem(movie, viewModel, navController)
+            MainMovieItem(windowSizeClass, movie, viewModel, navController)
         }
     }
 }
@@ -140,6 +144,7 @@ fun MainMoviesContent(
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun MainSongsContent(
+    windowSizeClass: WindowSizeClass,
     viewModel: MainViewModel,
     navController: NavController,
     isMyProfile: Boolean
@@ -154,7 +159,7 @@ fun MainSongsContent(
             if (isMyProfile) viewModel.sharedState.myUserInfo.value.favoriteTracks
             else viewModel.sharedState.otherUserInfo.value.favoriteTracks
         ) { track ->
-            MainSongItem(track, viewModel, navController)
+            MainSongItem(windowSizeClass, track, viewModel, navController)
         }
     }
 }

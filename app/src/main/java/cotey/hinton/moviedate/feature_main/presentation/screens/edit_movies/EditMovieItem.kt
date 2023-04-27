@@ -1,5 +1,7 @@
 package cotey.hinton.moviedate.feature_main.presentation.screens.edit_movies
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,22 +22,21 @@ import cotey.hinton.moviedate.Screens
 import cotey.hinton.moviedate.feature_auth.domain.models.Movie
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 
+@RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun EditMovieItem(
+    windowSizeClass: WindowSizeClass,
     movie: Movie,
     viewModel: MainViewModel,
     navController: NavController,
     showFavoriteIcon: Boolean
 ) {
+    val iconSize = if(windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 40.dp
 
-    Box(
-        modifier = if(showFavoriteIcon)
-            Modifier.fillMaxSize().padding(10.dp).clip(RoundedCornerShape(20.dp))
-        else
-            Modifier.width(100.dp).height(160.dp).padding(4.dp).clip(RoundedCornerShape(10.dp))
-    ) {
+    Box(Modifier.fillMaxSize().padding(4.dp).clip(RoundedCornerShape(20.dp))) {
 
         GlideImage(
             modifier = Modifier
@@ -64,10 +65,13 @@ fun EditMovieItem(
                     else viewModel.editMoviesScreenState.favoriteMovies.add(movie)
                 }) {
                     Icon(
-                        imageVector = if (viewModel.editMoviesScreenState.favoriteMovies.contains(movie)) Icons.Outlined.Star
+                        imageVector =
+                        if (viewModel.editMoviesScreenState.favoriteMovies.contains(movie))
+                            Icons.Outlined.Star
                         else Icons.Outlined.StarBorder,
                         contentDescription = null,
-                        tint = Pink
+                        tint = Pink,
+                        modifier = Modifier.size(iconSize)
                     )
                 }
             }

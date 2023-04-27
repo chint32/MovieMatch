@@ -17,13 +17,16 @@ import androidx.compose.ui.draw.alpha
 import androidx.navigation.NavController
 import cotey.hinton.moviedate.feature_main.presentation.screens.shared.components.ProgressIndicatorClickDisabled
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun ConversationsScreen(
+    windowSizeClass: WindowSizeClass,
     navController: NavController,
     viewModel: MainViewModel
 ) {
+    val contentAlpha = if (viewModel.conversationsScreenState.isLoading.value) .5f else 1f
     val hasBeenCalled = remember { mutableStateOf(false) }
     if (!hasBeenCalled.value) {
         viewModel.getConversations()
@@ -32,12 +35,12 @@ fun ConversationsScreen(
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.fillMaxSize()
-                .alpha(if (viewModel.conversationsScreenState.isLoading.value) .5f else 1f),
+                .alpha(contentAlpha),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(viewModel.conversationsScreenState.conversations) { conversation ->
-                    ConversationItem(conversation, navController, viewModel)
+                    ConversationItem(windowSizeClass, conversation, navController, viewModel)
                 }
             }
         }

@@ -49,12 +49,14 @@ import cotey.hinton.moviedate.Screens
 import cotey.hinton.moviedate.feature_auth.domain.models.UserInfo
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalPagerApi::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun ProfileDetailsScreen(
+    windowSizeClass: WindowSizeClass,
     navController: NavController,
     viewModel: MainViewModel,
     isMyProfile: Boolean,
@@ -62,26 +64,21 @@ fun ProfileDetailsScreen(
 ) {
 
     // references to state
+    val imageSize = if (windowSizeClass == WindowSizeClass.COMPACT) 100.dp else 170.dp
+    val fontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 22.sp else 30.sp
+    val fontSizeIsActive = if (windowSizeClass == WindowSizeClass.COMPACT) 18.sp else 28.sp
+    val fontSizeInfo = if (windowSizeClass == WindowSizeClass.COMPACT) 18.sp else 32.sp
     val myUserInfo = viewModel.sharedState.myUserInfo
     val otherUserInfo = viewModel.sharedState.otherUserInfo
     if (!isMyProfile) viewModel.profileDetailsScreenState.isEditMode.value = false
-    viewModel.profileDetailsScreenState.pagerState = rememberPagerState(
+    val pagerState = rememberPagerState(
         pageCount = if (isMyProfile) myUserInfo.value.images.size else otherUserInfo.value.images.size
     )
-
-    val matchPercentage = calculateMatchPercentage(myUserInfo.value, otherUserInfo.value)
-
-    // enable user to select images from gallery
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        viewModel.profileDetailsScreenState.uriList[viewModel.profileDetailsScreenState.pagerState.currentPage] =
-            uri
-    }
-    val targetValue by remember {
-        mutableStateOf(0f)
-    }
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) }
+    val matchPercentage = 100f
+//        calculateMatchPercentage(myUserInfo.value, otherUserInfo.value)
+    val uriList = remember { mutableStateListOf<Uri?>(null, null, null) }
+    val targetValue by remember { mutableStateOf(0f) }
     val progress = remember(targetValue) { Animatable(initialValue = 0f) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(true) {
@@ -95,25 +92,31 @@ fun ProfileDetailsScreen(
             )
         }
     }
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        uriList[pagerState.currentPage] =
+            uri
+    }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 
-//            Tabs(pagerState = viewModel.profileDetailsScreenState.pagerState)
+
+
         TabsContent(
-            viewModel.profileDetailsScreenState.pagerState,
+            pagerState,
             isMyProfile,
             viewModel.profileDetailsScreenState.isEditMode,
             myUserInfo.value,
             otherUserInfo.value,
             galleryLauncher,
-            viewModel.profileDetailsScreenState.uriList,
-            viewModel.profileDetailsScreenState.bitmap,
+            uriList,
+            bitmap,
             LocalContext.current
         )
 
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-
-
             Column(
                 modifier = if (viewModel.profileDetailsScreenState.isEditMode.value) Modifier
                     .fillMaxWidth(.9f)
@@ -132,13 +135,12 @@ fun ProfileDetailsScreen(
                         else otherUserInfo.value.images[0],
                         contentDescription = "Profile Image",
                         modifier = Modifier
-                            .size(100.dp)
+                            .size(imageSize)
                             .clip(CircleShape)
                             .fillMaxWidth(),
                         contentScale = ContentScale.FillBounds
                     )
                 }
-
 
                 // screen name
                 if (isMyProfile) {
@@ -157,14 +159,17 @@ fun ProfileDetailsScreen(
                                 unfocusedIndicatorColor = Color.DarkGray,
                                 backgroundColor = Color.Transparent
                             ),
-                            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
+                            textStyle = LocalTextStyle.current.copy(
+                                textAlign = TextAlign.Center,
+                                fontSize = fontSize
+                            )
                         )
                     } else {
                         Text(
                             text = "${myUserInfo.value.screenName}, ${myUserInfo.value.age}",
                             color = Color.White,
                             modifier = Modifier.fillMaxWidth(.82f),
-                            fontSize = 20.sp,
+                            fontSize = fontSize,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -173,7 +178,7 @@ fun ProfileDetailsScreen(
                         text = "${otherUserInfo.value.screenName}, ${otherUserInfo.value.age}",
                         color = Color.White,
                         modifier = Modifier.fillMaxWidth(.82f),
-                        fontSize = 20.sp,
+                        fontSize = fontSize,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
@@ -187,10 +192,11 @@ fun ProfileDetailsScreen(
                         Text(
                             modifier = Modifier.padding(10.dp, 0.dp),
                             text = "Active now",
-                            color = Color.LightGray
+                            color = Color.LightGray,
+                            fontSize = fontSizeIsActive,
                         )
                     }
-                    if(!isMyProfile) {
+                    if (!isMyProfile) {
                         Row(
                             modifier = Modifier.fillMaxWidth(.8f),
                             verticalAlignment = Alignment.CenterVertically
@@ -211,7 +217,8 @@ fun ProfileDetailsScreen(
                                     .fillMaxWidth(.6f)
                                     .padding(10.dp, 0.dp),
                                 color = Color.LightGray,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                fontSize = fontSizeInfo
                             )
                         }
                     }
@@ -232,34 +239,41 @@ fun ProfileDetailsScreen(
                         "Relationship",
                         "Fun"
                     )
-                if (!viewModel.profileDetailsScreenState.isEditMode.value) Spacer(Modifier.height(6.dp))
+                if (!viewModel.profileDetailsScreenState.isEditMode.value)
+                    Spacer(Modifier.height(6.dp))
                 DropDownItem(
-                    items = genderOptions, "Your gender", viewModel, isMyProfile, false
+                    windowSizeClass, genderOptions, "Your gender", viewModel, isMyProfile, false
                 )
-                if (!viewModel.profileDetailsScreenState.isEditMode.value) Spacer(Modifier.height(6.dp))
+                if (!viewModel.profileDetailsScreenState.isEditMode.value)
+                    Spacer(Modifier.height(6.dp))
                 DropDownItem(
-                    items = genderOptions, "Gender interested in", viewModel, isMyProfile, true
+                    windowSizeClass,
+                    genderOptions,
+                    "Gender interested in",
+                    viewModel,
+                    isMyProfile,
+                    true
                 )
                 Spacer(Modifier.height(10.dp))
                 DropDownItem(
-                    items = lookingForOptions, "Looking for", viewModel, isMyProfile, true
+                    windowSizeClass, lookingForOptions, "Looking for", viewModel, isMyProfile, true
                 )
                 val ages = ArrayList<String>()
                 for (i in 15..100) ages.add(i.toString())
                 if (viewModel.profileDetailsScreenState.isEditMode.value) {
                     DropDownItem(
-                        items = ages,
+                        windowSizeClass, ages,
                         "Your age",
                         viewModel,
                         isMyProfile,
                         false
                     )
                     DropDownItem(
-                        items = ages, "Interested in ages starting at", viewModel,
+                        windowSizeClass, ages, "Interested in ages starting at", viewModel,
                         isMyProfile, false
                     )
                     DropDownItem(
-                        items = ages, "Interested in ages ending at", viewModel,
+                        windowSizeClass, ages, "Interested in ages ending at", viewModel,
                         isMyProfile, false
                     )
                 }
@@ -276,22 +290,12 @@ fun ProfileDetailsScreen(
                         steps = 9,
                         modifier = Modifier.fillMaxWidth(.8f)
                     )
-                    Row(modifier = Modifier.fillMaxWidth(.8f)) {
-                        Text(
-                            text = "Search Distance:  ",
-                            color = Color.White,
-                            fontSize = 17.sp,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.weight(2f)
-                        )
-                        Text(
-                            text = "${sliderState.toInt()}",
-                            color = Pink,
-                            fontSize = 17.sp,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Text(
+                        text = "Search Distance: ${sliderState.toInt()}",
+                        color = Color.White,
+                        fontSize = fontSizeInfo
+                    )
+
                     Spacer(modifier = Modifier.height(10.dp))
                 } else Spacer(modifier = Modifier.height(30.dp))
                 Button(
@@ -306,12 +310,13 @@ fun ProfileDetailsScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(40.dp, 0.dp, 40.dp, if (isMatch) 5.dp else 60.dp),
+                        .padding(40.dp, 0.dp, 40.dp, if (isMatch) 5.dp else 80.dp),
                     shape = CircleShape
                 ) {
                     Text(
                         text = if (viewModel.profileDetailsScreenState.isEditMode.value) "Edit Favorites" else "View Favorites",
                         color = Color.White,
+                        fontSize = fontSizeInfo
                     )
                 }
                 if (isMatch) {
@@ -323,7 +328,10 @@ fun ProfileDetailsScreen(
 
                         shape = CircleShape
                     ) {
-                        Text(text = "Message This User", color = Color.White)
+                        Text(
+                            text = "Message This User", color = Color.White,
+                            fontSize = fontSizeInfo,
+                        )
                     }
                 }
             }
@@ -333,7 +341,7 @@ fun ProfileDetailsScreen(
     // setting icon to enable/disable edit mode
     if (isMyProfile) {
         if (!viewModel.profileDetailsScreenState.isEditMode.value) {
-            EditIcon(viewModel, null)
+            EditIcon(windowSizeClass, uriList, viewModel, null)
         } else {
             val infiniteTransition = rememberInfiniteTransition()
             val angle by infiniteTransition.animateFloat(
@@ -344,27 +352,41 @@ fun ProfileDetailsScreen(
                     repeatMode = RepeatMode.Restart
                 )
             )
-            EditIcon(viewModel, angle)
+            EditIcon(windowSizeClass, uriList, viewModel, angle)
         }
-    }
-    else {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
+    } else {
+        Box(
+            modifier = if (windowSizeClass == WindowSizeClass.COMPACT)
+                Modifier
+                    .fillMaxSize()
+                    .padding(20.dp, 0.dp, 0.dp, 100.dp)
+            else Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomEnd
+        ) {
             Column(
                 Modifier
                     .fillMaxSize(.5f)
                     .padding(0.dp, 30.dp, 30.dp, 0.dp)
             ) {
-                Spacer(modifier = Modifier.height(if(!isMatch)20.dp else 0.dp))
-                Speedometer(progress.value.toInt())
+                Spacer(modifier = Modifier.height(if (!isMatch) 20.dp else 0.dp))
+                MatchPercentGuage(windowSizeClass, progress.value.toInt())
+                if (windowSizeClass != WindowSizeClass.COMPACT)
+                    Spacer(modifier = Modifier.height(50.dp))
 
             }
             Text(
                 "Match\nPercent",
                 color = Color.White,
-                fontSize = 18.sp,
+                fontSize = fontSizeInfo,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(0.dp, 0.dp, 80.dp, 176.dp)
+                modifier = if (windowSizeClass == WindowSizeClass.COMPACT) Modifier.padding(
+                    0.dp,
+                    0.dp,
+                    80.dp,
+                    55.dp
+                )
+                else Modifier.padding(0.dp, 0.dp, 180.dp, 176.dp)
             )
         }
     }
@@ -372,20 +394,25 @@ fun ProfileDetailsScreen(
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
-fun EditIcon(viewModel: MainViewModel, angle: Float?) {
+fun EditIcon(windowSizeClass: WindowSizeClass, uriList: SnapshotStateList<Uri?>, viewModel: MainViewModel, angle: Float?) {
+    val iconSize = if(windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 40.dp
     IconButton(modifier = if (angle != null) Modifier.rotate(angle) else Modifier,
         onClick = {
             if (viewModel.profileDetailsScreenState.isEditMode.value) {
                 viewModel.updateUserInfo(
                     viewModel.sharedState.myUserInfo.value,
-                    viewModel.profileDetailsScreenState.uriList,
+                    uriList,
                     null
                 )
             }
             viewModel.profileDetailsScreenState.isEditMode.value =
                 !viewModel.profileDetailsScreenState.isEditMode.value
         }) {
-        Icon(imageVector = Icons.Default.Settings, contentDescription = "", tint = Pink)
+        Icon(
+            imageVector = Icons.Default.Settings,
+            contentDescription = "",
+            tint = Pink,
+            modifier = Modifier.size(iconSize))
     }
 }
 
@@ -407,6 +434,7 @@ private fun distance(lat_a: Float, lng_a: Float, lat_b: Float, lng_b: Float): Fl
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun DropDownItem(
+    windowSizeClass: WindowSizeClass,
     items: List<String>,
     label: String,
     viewModel: MainViewModel,
@@ -417,6 +445,9 @@ fun DropDownItem(
     var mExpanded by remember { mutableStateOf(false) }
     var mSelectedText by remember { mutableStateOf(label) }
     var mTextFieldSize by remember { mutableStateOf(Size.Zero) }
+    val iconSize = if(windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 40.dp
+    val fontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 18.sp else 32.sp
+    val fontSizeButton = if (windowSizeClass == WindowSizeClass.COMPACT) 22.sp else 32.sp
 
     if (label == "Your gender")
         mSelectedText = if (viewingOwnProfile) viewModel.sharedState.myUserInfo.value.gender
@@ -451,9 +482,10 @@ fun DropDownItem(
         Icon(
             imageVector = if (label == "Your gender") Icons.Outlined.Person
             else if (label == "Gender interested in") Icons.Outlined.PersonSearch
-            else if(label == "Looking for") Icons.Outlined.Search
+            else if (label == "Looking for") Icons.Outlined.Search
             else Icons.Outlined.CalendarMonth,
-            contentDescription = null, tint = Color.LightGray
+            contentDescription = null, tint = Color.LightGray,
+            modifier = Modifier.size(iconSize)
         )
         Text(
             text = mSelectedText,
@@ -461,16 +493,19 @@ fun DropDownItem(
                 .onGloballyPositioned { coordinates ->
                     mTextFieldSize = coordinates.size.toSize()
                 }
-                .fillMaxWidth(.8f)
+                .fillMaxWidth(.93f)
                 .padding(10.dp, 0.dp),
             color = Color.LightGray,
+            fontSize = fontSize,
             fontWeight = FontWeight.Bold,
             textAlign = if (viewModel.profileDetailsScreenState.isEditMode.value) TextAlign.Center else TextAlign.Start
         )
 
         if (viewingOwnProfile && viewModel.profileDetailsScreenState.isEditMode.value) {
             IconButton(onClick = { mExpanded = !mExpanded }) {
-                Icon(imageVector = icon, contentDescription = "", tint = Pink)
+                Icon(imageVector = icon, contentDescription = "", tint = Pink,
+                    modifier = Modifier.size(iconSize)
+                )
             }
 
             DropdownMenu(
@@ -515,6 +550,7 @@ fun DropDownItem(
                             ) {
                                 Text(
                                     text = value,
+                                    fontSize = fontSizeButton,
                                     modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
                                 )
                                 Checkbox(
@@ -531,7 +567,10 @@ fun DropDownItem(
                                     })
                             }
                         } else {
-                            Text(text = value)
+                            Text(
+                                text = value,
+                                fontSize = fontSizeButton,
+                            )
                         }
                     }
                 }
@@ -553,63 +592,14 @@ fun DropDownItem(
                         },
                         shape = CircleShape
                     ) {
-                        Text(text = "Accept", color = Color.White)
+                        Text(
+                            text = "Accept",
+                            color = Color.White,
+                            fontSize = fontSizeButton,
+                        )
                     }
                 }
             }
-        }
-    }
-}
-
-@ExperimentalPagerApi
-@Composable
-fun Tabs(pagerState: PagerState) {
-
-
-    val list = ArrayList<String>()
-    for (i in 0 until pagerState.pageCount) {
-        if (i == 0) list.add("Profile")
-        else if (i == 1) list.add("Image 2")
-        else if (i == 2) list.add("Image 3")
-    }
-    val scope = rememberCoroutineScope()
-    TabRow(
-        selectedTabIndex = pagerState.currentPage,
-        backgroundColor = Color.Transparent,
-        contentColor = Color.Transparent,
-        indicator = { tabPositions ->
-            TabRowDefaults.Indicator(
-                Modifier.pagerTabIndicatorOffset(pagerState, tabPositions),
-                color = Color.Transparent
-            )
-        },
-    ) {
-        list.forEachIndexed { index, _ ->
-            Tab(
-                text = {
-                    if ((pagerState.currentPage == index)) {
-                        Text(
-                            list[index],
-                            color = Color.White,
-                            fontSize = 36.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                        )
-                    } else {
-                        Text(
-                            list[index],
-                            color = Color.DarkGray,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                selected = pagerState.currentPage == index,
-                onClick = {
-                    scope.launch {
-                        pagerState.animateScrollToPage(index)
-                    }
-                }
-            )
         }
     }
 }
@@ -633,10 +623,12 @@ fun TabsContent(
                 isMyProfile, myUserInfo, otherUserInfo, 0, editMode,
                 galleryLauncher, images[page], bitmap, context
             )
+
             1 -> UserImage(
                 isMyProfile, myUserInfo, otherUserInfo, 1, editMode,
                 galleryLauncher, images[page], bitmap, context
             )
+
             2 -> UserImage(
                 isMyProfile, myUserInfo, otherUserInfo, 2, editMode,
                 galleryLauncher, images[page], bitmap, context
@@ -738,9 +730,11 @@ private fun calculateMatchPercentage(myUserInfo: UserInfo, otherUserInfo: UserIn
 
 @OptIn(ExperimentalTextApi::class)
 @Composable
-fun Speedometer(
+fun MatchPercentGuage(
+    windowSizeClass: WindowSizeClass,
     progress: Int,
 ) {
+    val fontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 28.sp else 58.sp
     val arcDegrees = 275
     val startArcAngle = 135f
     val startStepAngle = -45
@@ -755,17 +749,24 @@ fun Speedometer(
             drawIntoCanvas { canvas ->
                 val w = drawContext.size.width
                 val h = drawContext.size.height
-                val textOffset = if (progress < 10) Offset((w / 2f) - 25, (h / 3f) + 20)
-                else if (progress in 10..99) Offset((w / 2f) - 45, (h / 3f) + 20)
-                else Offset((w / 2f) - 65, (h / 3f) + 20)
-                val quarterOffset = Offset(w / 4f, h / 4f)
+                val textOffset = if (progress < 10) Offset((w / 2.2f), (h / 2.7f))
+                else if (progress in 10..99) Offset(w / 2.4f,h / 2.6f)
+                else Offset(
+                    if(windowSizeClass == WindowSizeClass.COMPACT) w / 2.8f else w / 2.6f,
+                    h / 2.6f
+                )
+                val quarterOffset =
+                    if (windowSizeClass == WindowSizeClass.COMPACT) Offset(w / 4f, h / 4f)
+                    else Offset(w / 4f, h / 4f)
 
                 // Drawing Center Arc background
                 val (mainColor, secondaryColor) = when {
                     progress < 33 -> // Blue
                         Color(0xFF0703ED) to Color(0xFFE3E2FE)
+
                     progress < 66 -> // Purple
                         Color(0xFF9300FF) to Color(0xFFF0CEFF)
+
                     else -> // Pink
                         Pink to Color(0xFFFEDAF0)
                 }
@@ -802,7 +803,10 @@ fun Speedometer(
                             height = (size.height / 3f).toInt()
                         ),
                         overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(fontSize = 28.sp, color = mainColor)
+                        style = TextStyle(
+                            fontSize = fontSize,
+                            color = mainColor
+                        )
                     )
                 drawText(measuredText, topLeft = textOffset)
 

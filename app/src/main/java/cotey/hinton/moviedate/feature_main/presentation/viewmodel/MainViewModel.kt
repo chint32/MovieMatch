@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import cotey.hinton.moviedate.feature_main.domain.models.TextMessage
 import cotey.hinton.moviedate.feature_main.presentation.screens.conversations.ConversationsScreenState
-import cotey.hinton.moviedate.feature_main.presentation.screens.edit_movies.EditMoviesScreenState
+import cotey.hinton.moviedate.feature_main.presentation.screens.edit_movies.EditFavoritesScreenState
 import cotey.hinton.moviedate.feature_main.presentation.screens.main.MainScreenState
 import cotey.hinton.moviedate.feature_main.presentation.screens.affections.AffectionsScreenState
 import cotey.hinton.moviedate.feature_main.presentation.screens.messages.MessagesScreenState
@@ -75,7 +75,6 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-
 
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -229,13 +228,13 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private val _editMoviesScreenState = EditMoviesScreenState()
-    val editMoviesScreenState = _editMoviesScreenState
+    private val _editFavoritesScreenState = EditFavoritesScreenState()
+    val editMoviesScreenState = _editFavoritesScreenState
 
     private var hasBeenAdded = false
     fun addFavoritesMoviesToEdit() {
         if (hasBeenAdded) return
-        _editMoviesScreenState.favoriteMovies.addAll(sharedState.myUserInfo.value.favoriteMovies)
+        _editFavoritesScreenState.favoriteMovies.addAll(sharedState.myUserInfo.value.favoriteMovies)
         hasBeenAdded = true
 
     }
@@ -243,7 +242,7 @@ class MainViewModel @Inject constructor(
     private var hasSongBeenAdded = false
     fun addFavoriteSongsToEdit() {
         if (hasSongBeenAdded) return
-        _editMoviesScreenState.favoriteSongs.addAll(sharedState.myUserInfo.value.favoriteTracks)
+        _editFavoritesScreenState.favoriteSongs.addAll(sharedState.myUserInfo.value.favoriteTracks)
         hasSongBeenAdded = true
 
     }
@@ -252,19 +251,19 @@ class MainViewModel @Inject constructor(
     fun getTop100() {
         if (hasBeenCalled) return
         hasBeenCalled = true
-        _editMoviesScreenState.isLoading.value = true
+        _editFavoritesScreenState.isLoading.value = true
         viewModelScope.launch {
             try {
                 top100Repository.getTop100().collect {
                     println(it)
-                    if (_editMoviesScreenState.top100Movies.isNotEmpty())
-                        _editMoviesScreenState.top100Movies.clear()
-                    _editMoviesScreenState.top100Movies.addAll(it)
+                    if (_editFavoritesScreenState.top100Movies.isNotEmpty())
+                        _editFavoritesScreenState.top100Movies.clear()
+                    _editFavoritesScreenState.top100Movies.addAll(it)
                 }
-                _editMoviesScreenState.isLoading.value = false
+                _editFavoritesScreenState.isLoading.value = false
 
             } catch (e: Exception) {
-                _editMoviesScreenState.isLoading.value = false
+                _editFavoritesScreenState.isLoading.value = false
                 println("Error!!!!!!!!!!!  " + e.message)
             }
         }
@@ -274,21 +273,21 @@ class MainViewModel @Inject constructor(
     fun getSpotifyTop200() {
         if (hasGetSongsBeenCalled) return
         hasGetSongsBeenCalled = true
-        _editMoviesScreenState.isLoading.value = true
+        _editFavoritesScreenState.isLoading.value = true
         viewModelScope.launch {
             try {
                 spotifyRepository.getSpotifyTop200().collect { response ->
-                    if (_editMoviesScreenState.top200Songs.isNotEmpty())
-                        _editMoviesScreenState.top200Songs.clear()
-                    _editMoviesScreenState.top200Songs.addAll(response.map {
+                    if (_editFavoritesScreenState.top200Songs.isNotEmpty())
+                        _editFavoritesScreenState.top200Songs.clear()
+                    _editFavoritesScreenState.top200Songs.addAll(response.map {
                         it.trackMetadata.id = it.trackMetadata.trackUri.substringAfterLast(":")
                         it.trackMetadata
                     })
                 }
-                _editMoviesScreenState.isLoading.value = false
+                _editFavoritesScreenState.isLoading.value = false
 
             } catch (e: Exception) {
-                _editMoviesScreenState.isLoading.value = false
+                _editFavoritesScreenState.isLoading.value = false
                 println("Error!!!!!!!!!!!  " + e.message)
             }
         }
@@ -296,23 +295,23 @@ class MainViewModel @Inject constructor(
 
     fun searchSongsByTitle(title: String) {
         if (title.isBlank()) {
-            if (_editMoviesScreenState.top200Songs.isNotEmpty())
-                _editMoviesScreenState.top200Songs.clear()
+            if (_editFavoritesScreenState.top200Songs.isNotEmpty())
+                _editFavoritesScreenState.top200Songs.clear()
         } else {
-            if (_editMoviesScreenState.searchedSongs.isNotEmpty())
-                _editMoviesScreenState.searchedSongs.clear()
+            if (_editFavoritesScreenState.searchedSongs.isNotEmpty())
+                _editFavoritesScreenState.searchedSongs.clear()
         }
-        _editMoviesScreenState.isLoading.value = true
+        _editFavoritesScreenState.isLoading.value = true
         viewModelScope.launch {
             try {
                 if (title.isBlank()) {
                     spotifyRepository.getSpotifyTop200().collect { result ->
-                        _editMoviesScreenState.top200Songs.addAll(result.map { it.trackMetadata })
+                        _editFavoritesScreenState.top200Songs.addAll(result.map { it.trackMetadata })
                     }
                 } else {
                     spotifyRepository.getSpotifySongsByTitle(title).collect { result ->
                         println(result)
-                        _editMoviesScreenState.searchedSongs.addAll(result.tracks.map {
+                        _editFavoritesScreenState.searchedSongs.addAll(result.tracks.map {
                             TrackMetaData(
                                 it.data.albumOfTrack.name,
                                 it.data.albumOfTrack.uri,
@@ -323,7 +322,7 @@ class MainViewModel @Inject constructor(
                         })
                     }
                 }
-                _editMoviesScreenState.isLoading.value = false
+                _editFavoritesScreenState.isLoading.value = false
 
             } catch (e: Exception) {
                 println("Error!!!!!!!!!!!  " + e.message)
@@ -356,15 +355,15 @@ class MainViewModel @Inject constructor(
             try {
                 if (searchValue == "") {
                     top100Repository.getTop100().collect {
-                        if (_editMoviesScreenState.top100Movies.isNotEmpty())
-                            _editMoviesScreenState.top100Movies.clear()
-                        _editMoviesScreenState.top100Movies.addAll(it)
+                        if (_editFavoritesScreenState.top100Movies.isNotEmpty())
+                            _editFavoritesScreenState.top100Movies.clear()
+                        _editFavoritesScreenState.top100Movies.addAll(it)
                     }
                 } else {
                     repository.getMovieDetailsFromTitle(searchValue).collect {
-                        if (_editMoviesScreenState.searchedMovies.isNotEmpty())
-                            _editMoviesScreenState.searchedMovies.clear()
-                        _editMoviesScreenState.searchedMovies.addAll(it)
+                        if (_editFavoritesScreenState.searchedMovies.isNotEmpty())
+                            _editFavoritesScreenState.searchedMovies.clear()
+                        _editFavoritesScreenState.searchedMovies.addAll(it)
                     }
                 }
                 editMoviesScreenState.isLoading.value = false

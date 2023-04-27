@@ -21,13 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
+import androidx.window.layout.WindowMetricsCalculator
 import com.google.firebase.auth.FirebaseAuth
 import cotey.hinton.moviedate.R
 import cotey.hinton.moviedate.feature_auth.presentation.navigation.AuthNavigation
 import cotey.hinton.moviedate.feature_main.presentation.MainActivity
 import cotey.hinton.moviedate.ui.theme.MovieDateTheme
+import cotey.hinton.moviedate.util.WindowSizeClass
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -42,16 +45,14 @@ class AuthActivity : ComponentActivity() {
         window.statusBarColor = (ContextCompat.getColor(this, R.color.black))
 
         setContent {
+            val windowSizeClass = calculateWindowSizeClass()
             MovieDateTheme {
 
                 if (FirebaseAuth.getInstance().currentUser != null)
                     startActivity(Intent(LocalContext.current, MainActivity::class.java))
                 val navController = rememberNavController()
 
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-
-                    ) {
+                Surface( modifier = Modifier.fillMaxSize() ) {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         backgroundColor = Color.Black,
@@ -82,6 +83,7 @@ class AuthActivity : ComponentActivity() {
                                     )
                                 }
                                 AuthNavigation(
+                                    windowSizeClass,
                                     navController = navController,
                                     paddingValues = paddingValues
                                 )
@@ -92,4 +94,18 @@ class AuthActivity : ComponentActivity() {
             }
         }
     }
+    private fun calculateWindowSizeClass() : WindowSizeClass {
+        val metrics = WindowMetricsCalculator.getOrCreate()
+            .computeCurrentWindowMetrics(this)
+
+        val widthDp = metrics.bounds.width() /
+                resources.displayMetrics.density
+        val widthWindowSizeClass = when {
+            widthDp < 600f -> WindowSizeClass.COMPACT
+            widthDp < 900f -> WindowSizeClass.MEDIUM
+            else -> WindowSizeClass.EXPANDED
+        }
+        return widthWindowSizeClass
+    }
 }
+

@@ -1,56 +1,47 @@
-package cotey.hinton.moviedate
+package cotey.hinton.moviedate.feature_main.presentation.navigation.bottom_nav
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import cotey.hinton.moviedate.feature_main.presentation.navigation.bottom_nav.Constants
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavigationBar(windowSizeClass: WindowSizeClass, navController: NavHostController) {
 
     BottomNavigation(
-
-        // set background color
         backgroundColor = Color.DarkGray.copy(),
-        contentColor = Pink
+        contentColor = Pink,
+        modifier = Modifier.height(if(windowSizeClass == WindowSizeClass.COMPACT) 50.dp else 75.dp)
     ) {
 
-        // observe the backstack
         val navBackStackEntry by navController.currentBackStackEntryAsState()
-
-        // observe current route to change the icon
-        // color,label color when navigated
         val currentRoute = navBackStackEntry?.destination?.route
 
-        // Bottom nav items we declared
         Constants.BottomNavItems.forEach { navItem ->
-
-            // Place the bottom nav items
             BottomNavigationItem(
-
-                // it currentRoute is equal then its selected route
                 selected = currentRoute == navItem.route,
-
-                // navigate on click
-                onClick = {
-                    navController.navigate(navItem.route)
-                },
-
-                // Icon of navItem
+                onClick = { navController.navigate(navItem.route) },
                 icon = {
-                    Icon(imageVector = navItem.icon, contentDescription = navItem.label)
+                    Icon(
+                        imageVector = navItem.icon,
+                        contentDescription = navItem.label,
+                        modifier = Modifier.size(if(windowSizeClass == WindowSizeClass.COMPACT) 24.dp else 40.dp)
+                    )
                 },
-
-                // label
                 label = {
-                    Text(text = navItem.label)
+                    Text(text = navItem.label, fontSize = if(windowSizeClass == WindowSizeClass.COMPACT) 16.sp else 26.sp)
                 },
                 alwaysShowLabel = false
             )

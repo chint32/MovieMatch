@@ -32,12 +32,14 @@ import cotey.hinton.moviedate.Screens
 import cotey.hinton.moviedate.feature_auth.domain.models.UserInfo
 import cotey.hinton.moviedate.feature_main.presentation.viewmodel.MainViewModel
 import cotey.hinton.moviedate.ui.theme.Pink
+import cotey.hinton.moviedate.util.WindowSizeClass
 import kotlin.math.roundToInt
 
 @RequiresApi(Build.VERSION_CODES.N)
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun CardStack(
+    windowSizeClass: WindowSizeClass,
     modifier: Modifier = Modifier,
     items: MutableList<Pair<UserInfo, Int>>,
     thresholdConfig: (Float, Float) -> ThresholdConfig = { _, _ -> FractionalThreshold(0.2f) },
@@ -83,9 +85,7 @@ fun CardStack(
     }
 
     ConstraintLayout(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(0.dp)
+        modifier = modifier.fillMaxSize().padding(0.dp)
     ) {
         val stack = createRef()
 
@@ -104,6 +104,7 @@ fun CardStack(
         ) {
             items.forEachIndexed { index, item ->
                 Card(
+                    windowSizeClass,
                     modifier = Modifier
                         .moveTo(
                             x = if (index == i) cardStackController.offsetX.value else 0f,
@@ -117,9 +118,7 @@ fun CardStack(
                         )
                         .visible(visible = index > i - 5 && index < i + 1)
                         .graphicsLayer(
-                            rotationZ = if (index == i) cardStackController.rotation.value else 0f,
-//                            scaleX = if (index < i) cardStackController.scale.value else 1f,
-//                            scaleY = if (index < i) cardStackController.scale.value else 1f
+                            rotationZ = if (index == i) cardStackController.rotation.value else 0f
                         ),
                     item,
                     cardStackController,
@@ -134,6 +133,7 @@ fun CardStack(
 @RequiresApi(Build.VERSION_CODES.N)
 @Composable
 fun Card(
+    windowSizeClass: WindowSizeClass,
     modifier: Modifier = Modifier,
     item: Pair<UserInfo, Int>,
     cardStackController: CardStackController,
@@ -142,12 +142,20 @@ fun Card(
 ) {
     val matchPercentage =
         calculateMatchPercentage(viewModel.sharedState.myUserInfo.value, item.first)
+    val padding = if (windowSizeClass == WindowSizeClass.COMPACT) 20.dp else 40.dp
+    val fontSizeScreenName = if (windowSizeClass == WindowSizeClass.COMPACT) 25.sp else 35.sp
+    val matchPercentFontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 30.sp else 40.sp
+    val matchPercentPadding = if(windowSizeClass == WindowSizeClass.COMPACT) 10.dp else 70.dp
+    val fontSize = if (windowSizeClass == WindowSizeClass.COMPACT) 20.sp else 30.sp
+    val iconSize = if(windowSizeClass == WindowSizeClass.COMPACT) 50.dp else 75.dp
+    val likeIconPadding =
+
     Box(modifier = modifier) {
         if (item.first.images[0] != null) {
             AsyncImage(
                 model = item.first.images[0],
                 contentDescription = "",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.FillBounds,
                 modifier = modifier
                     .clip(RoundedCornerShape(10.dp))
                     .fillMaxSize()
@@ -171,13 +179,10 @@ fun Card(
             )
         }
 
-
-
-
         Column(
             modifier = modifier
                 .align(Alignment.BottomStart)
-                .padding(20.dp)
+                .padding(padding)
         ) {
             Row() {
                 Column(Modifier.fillMaxWidth(.7f)) {
@@ -185,32 +190,36 @@ fun Card(
                         text = item.first.screenName,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 25.sp
+                        fontSize = fontSizeScreenName
                     )
-                    Text(text = "Age: ${item.first.age}", color = Color.LightGray, fontSize = 20.sp)
+                    Text(
+                        text = "Age: ${item.first.age}",
+                        color = Color.LightGray,
+                        fontSize = fontSize
+                    )
                     Text(
                         text = "Distance: ${item.second}mi",
                         color = Color.LightGray,
-                        fontSize = 20.sp
+                        fontSize = fontSize
                     )
                     Text(
                         text = "Looking for: ${
                             item.first.lookingFor.mapNotNull { it }.joinToString()
                         }",
                         color = Color.LightGray,
-                        fontSize = 20.sp
+                        fontSize = fontSize
                     )
                 }
                 Column() {
                     Spacer(modifier = Modifier.height(25.dp))
                     Text(
                         text = "$matchPercentage%",
-                        fontSize = 30.sp,
+                        fontSize = matchPercentFontSize,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp, 20.dp),
+                            .padding(matchPercentPadding, 20.dp),
                         textAlign = TextAlign.End
                     )
                 }
@@ -219,30 +228,31 @@ fun Card(
 
             Row {
                 IconButton(
-                    modifier = modifier.padding(40.dp, 0.dp, 0.dp, 0.dp),
+                    modifier = if(windowSizeClass == WindowSizeClass.COMPACT)
+                        modifier.padding(40.dp, 0.dp, 0.dp, 0.dp)
+                    else modifier.padding(120.dp, 20.dp, 0.dp, 0.dp),
                     onClick = { cardStackController.swipeLeft() },
                 ) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "",
                         tint = Color.DarkGray,
-                        modifier = modifier
-                            .height(50.dp)
-                            .width(50.dp)
+                        modifier =  modifier.size(iconSize)
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(.1f))
 
-                IconButton(modifier = modifier.padding(0.dp, 0.dp, 40.dp, 0.dp),
+                IconButton(
+                    modifier = if(windowSizeClass == WindowSizeClass.COMPACT)
+                        modifier.padding(0.dp, 0.dp, 40.dp, 0.dp)
+                    else modifier.padding(0.dp, 20.dp, 120.dp, 0.dp),
                     onClick = { cardStackController.swipeRight() }) {
                     Icon(
                         Icons.Default.FavoriteBorder,
                         contentDescription = "",
                         tint = Pink,
-                        modifier = modifier
-                            .height(50.dp)
-                            .width(50.dp)
+                        modifier = modifier.size(iconSize)
                     )
                 }
             }
